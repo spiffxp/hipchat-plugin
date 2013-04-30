@@ -9,6 +9,7 @@ import hudson.scm.ChangeLogSet;
 import hudson.scm.ChangeLogSet.AffectedFile;
 import hudson.scm.ChangeLogSet.Entry;
 import org.apache.commons.lang.StringUtils;
+import org.kohsuke.stapler.StaplerRequest;
 
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -25,12 +26,15 @@ public class ActiveNotifier implements FineGrainedNotifier {
 
     public ActiveNotifier(HipChatNotifier notifier) {
         super();
-        this.notifier = notifier;
+        // HACKHACK: Don't want per-job notifier that gets stale, always pull from the "global" descriptor
+        HipChatNotifier.DescriptorImpl impl = notifier.getDescriptor();
+        this.notifier = new HipChatNotifier(impl.getToken(), impl.getRoom(), impl.getBuildServerUrl(), impl.getSendAs());
     }
 
     private HipChatService getHipChat(AbstractBuild r) {
         AbstractProject<?, ?> project = r.getProject();
         String projectRoom = Util.fixEmpty(project.getProperty(HipChatNotifier.HipChatJobProperty.class).getRoom());
+
         return notifier.newHipChatService(projectRoom);
     }
 
